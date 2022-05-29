@@ -15,15 +15,34 @@ using System.Windows.Shapes;
 
 namespace MatchGame
 {
+    using System.Windows.Threading;
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
+        DispatcherTimer timer = new DispatcherTimer();
+        int tenthsOfSecondsElapsed;
+        int matchesFound;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            timer.Interval = TimeSpan.FromSeconds(.1);
+            timer.Tick += Timer_Tick;
             SetUpGame();
+        }
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            tenthsOfSecondsElapsed++;
+            timeTextBlock.Text = (tenthsOfSecondsElapsed / 10F).ToString("0.0s");
+            if (matchesFound == 8)
+            {
+                timer.Stop();
+                timeTextBlock.Text = timeTextBlock.Text;
+            }
         }
 
         private void SetUpGame()
@@ -40,30 +59,46 @@ namespace MatchGame
                 "🦘","🦘",
                 "🦔","🦔",
             };
+            
             // Creates a new random number generator 
             Random random = new Random();
             
             // Finds each Textblock in the mainGrid and repeats the following statements for each of them
             foreach (TextBlock textblock in mainGrid.Children.OfType<TextBlock>())
             {
-                // Picks a random number between 0 and the number of emojis left in the list and calls it "index"
-                int index = random.Next(animalEmoji.Count);
-                // Uses the random number called "index" to get a random emoji from the list
-                string nextEmoji = animalEmoji[index];
-                //Updates the textblock with the random emoji from the list
-                textblock.Text = nextEmoji;
-                // Removes the random emoji from the list to avoid duplicate pairs
-                animalEmoji.RemoveAt(index);
+                if (textblock.Name != "timeTextBlock")
+                {
+                    // Picks a random number between 0 and the number of emojis left in the list and calls it "index"
+                    int index = random.Next(animalEmoji.Count);
+
+                    // Uses the random number called "index" to get a random emoji from the list
+                    string nextEmoji = animalEmoji[index];
+
+                    //Updates the textblock with the random emoji from the list
+                    textblock.Text = nextEmoji;
+
+                    // Removes the random emoji from the list to avoid duplicate pairs
+                    animalEmoji.RemoveAt(index);
+                }
             }
+
+            timer.Start();
+            tenthsOfSecondsElapsed = 0;
+            matchesFound = 0;
         }
 
         TextBlock lastTextBlockClicked;
+        
         /* Boolean to keep track of whether or not a player just clicked 
          * on the first animal in a pair and is now trying to find a match */
         bool findingMatch = false;
 
         private void TextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+            
         {
+           
+            //bool findingMatch = false;
+
             TextBlock textBlock = sender as TextBlock; 
 
             /* The player just clicked on the first animal in a pair,so it makes that animal visible 
@@ -78,6 +113,7 @@ namespace MatchGame
              *and resets findingMatch so the next animal clicked is the first one in a pair again */
             else if(textBlock.Text == lastTextBlockClicked.Text)
             {
+                matchesFound++;
                 textBlock.Visibility = Visibility.Hidden;
                 findingMatch = false;
             }
@@ -89,6 +125,14 @@ namespace MatchGame
                 findingMatch = false;
             }
 
+        }
+
+        private void TimeTextBlock_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (matchesFound == 8)
+            {
+                SetUpGame();
+            }
         }
     }
 }
